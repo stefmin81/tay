@@ -39,18 +39,8 @@
   </style>
 </head>
 <body>
-  <!-- Pagina iniziale -->
-  <div id="start-screen">
-    <h1>Which Era Are You?</h1>
-    <img src="test_esempio.png" alt="Taylor Swift Era Quiz">
-    <br>
-    <button onclick="startQuiz()">Start Quiz</button>
-  </div>
-
-  <!-- Quiz -->
+  <h1>Which Era Are You?</h1>
   <div id="quiz"></div>
-
-  <!-- Risultato -->
   <div id="result"></div>
 
   <script>
@@ -216,13 +206,13 @@
       if (currentQ >= questions.length) { showResult(); return; }
       const q = questions[currentQ];
       const container = document.getElementById("quiz");
-      container.innerHTML = `
+      container.innerHTML = 
         <div class="question">
           <h3>${q.question}</h3>
           <div class="answers">
-            ${q.answers.map((a,i) => `<button onclick="answer(${i})">${a.text}</button>`).join("")}
+            ${q.answers.map((a,i) => <button onclick="answer(${i})">${a.text}</button>).join("")}
           </div>
-        </div>`;
+        </div>;
     }
 
     function answer(i) {
@@ -243,11 +233,11 @@
       const topAlbum = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
       const emoji = albumEmojis[topAlbum] || "🎶";
       document.getElementById("result").style.display = "block";
-      document.getElementById("result").innerHTML = `
+      document.getElementById("result").innerHTML = 
         <h2>Your Taylor Swift Era is:</h2>
         <h1>${topAlbum}</h1>
         <div style="font-size:3em; margin-top:10px;">${emoji}</div>
-      `;
+      ;
     }
 
     showQuestion();
