@@ -102,27 +102,52 @@
   <div id="result" role="region" aria-live="polite"></div>
 
   <script>
-    // Handle Back behavior
+    // Safer Back behavior: never exit the site
     (function(){
       const btn = document.getElementById('backBtn');
-      function goBack(){
-        if (window.history && window.history.length > 1) {
-          window.history.back();
-        } else {
-          // No history: fall back to previous path or root
-          const ref = document.referrer;
-          if (ref) {
-            window.location.href = ref;
-          } else {
-            window.location.href = '/';
+      const FALLBACK_PATH = '/'; // change if you want a specific internal fallback
+
+      // Store a same-origin referrer at load for later use
+      try {
+        const ref = document.referrer;
+        if (ref) {
+          const u = new URL(ref, location.href);
+          if (u.origin === location.origin) {
+            sessionStorage.setItem('prev_same_origin', u.href);
           }
         }
+      } catch (e) {}
+
+      function goBackSafe(){
+        // 1) Same-origin referrer preferred
+        try {
+          const ref = document.referrer;
+          if (ref) {
+            const u = new URL(ref, location.href);
+            if (u.origin === location.origin) {
+              location.href = u.href;
+              return;
+            }
+          }
+        } catch(e) {}
+
+        // 2) Use stored previous page from this session (same-origin)
+        const stored = sessionStorage.getItem('prev_same_origin');
+        if (stored) {
+          location.href = stored;
+          return;
+        }
+
+        // 3) As a last resort, use a safe internal fallback
+        location.href = FALLBACK_PATH;
       }
-      btn.addEventListener('click', goBack);
-      // Keyboard shortcut: Alt + Left Arrow also works natively; add Shift+B
+
+      btn.addEventListener('click', goBackSafe);
+
+      // Optional keyboard shortcut: Shift+B
       window.addEventListener('keydown', (e) => {
         if ((e.key === 'B' || e.key === 'b') && e.shiftKey) {
-          goBack();
+          goBackSafe();
         }
       });
     })();
