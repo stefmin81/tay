@@ -13,6 +13,7 @@
       --shadow-md: 0 4px 12px rgba(0,0,0,0.2);
       --radius: 12px;
       --radius-btn: 10px;
+      --disabled: #dcdcdc;
     }
     * { box-sizing: border-box; }
     body {
@@ -23,12 +24,13 @@
       text-align: center;
       min-height: 100vh;
     }
-    /* Back button */
-    .back-wrap {
+    .topbar {
       position: sticky;
       top: 0;
       display: flex;
-      justify-content: flex-start;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       padding: 12px 0 0;
       z-index: 5;
       text-align: left;
@@ -44,11 +46,18 @@
       box-shadow: var(--shadow-sm);
       cursor: pointer;
       font-size: 14px;
-      transition: transform 0.05s ease, background 0.3s ease;
+      transition: transform 0.05s ease, background 0.3s ease, opacity 0.2s ease;
+      user-select: none;
     }
     #backBtn:hover { background: #f0e0f7; }
     #backBtn:active { transform: translateY(1px); }
-    #backBtn svg { width: 18px; height: 18px; }
+    #backBtn[disabled] {
+      opacity: 0.5;
+      cursor: default;
+      background: var(--disabled);
+      box-shadow: none;
+    }
+    #backBtn svg { width: 18px; height: 18px; transform: rotate(180deg); }
     h1 { margin: 10px 0 18px; font-size: 2em; }
     #quiz { max-width: 640px; margin: 0 auto; padding: 10px; }
     .question h3 { font-size: 1.3em; margin-bottom: 15px; }
@@ -74,27 +83,22 @@
       box-shadow: var(--shadow-md);
       max-width: 640px;
     }
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0,0,1px,1px);
-      white-space: nowrap;
-      border: 0;
+    .progress {
+      font-size: 12px;
+      margin-left: 8px;
+      opacity: 0.8;
     }
   </style>
 </head>
 <body>
-  <div class="back-wrap">
-    <button id="backBtn" aria-label="Go back to the previous page">
+  <div class="topbar">
+    <button id="backBtn" aria-label="Go back to the previous question">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M10.828 11.293 15.121 7l1.415 1.414-3.293 3.293 3.293 3.293-1.415 1.414-4.293-4.293a1 1 0 0 1 0-1.414Z"/>
       </svg>
       Back
     </button>
+    <div class="progress" id="progress" aria-live="polite"></div>
   </div>
 
   <h1>Which Era Are You?</h1>
@@ -102,105 +106,63 @@
   <div id="result" role="region" aria-live="polite"></div>
 
   <script>
-    // Safer Back behavior: never exit the site
-    (function(){
-      const btn = document.getElementById('backBtn');
-      const FALLBACK_PATH = '/'; // change if you want a specific internal fallback
-
-      // Store a same-origin referrer at load for later use
-      try {
-        const ref = document.referrer;
-        if (ref) {
-          const u = new URL(ref, location.href);
-          if (u.origin === location.origin) {
-            sessionStorage.setItem('prev_same_origin', u.href);
-          }
-        }
-      } catch (e) {}
-
-      function goBackSafe(){
-        // 1) Same-origin referrer preferred
-        try {
-          const ref = document.referrer;
-          if (ref) {
-            const u = new URL(ref, location.href);
-            if (u.origin === location.origin) {
-              location.href = u.href;
-              return;
-            }
-          }
-        } catch(e) {}
-
-        // 2) Use stored previous page from this session (same-origin)
-        const stored = sessionStorage.getItem('prev_same_origin');
-        if (stored) {
-          location.href = stored;
-          return;
-        }
-
-        // 3) As a last resort, use a safe internal fallback
-        location.href = FALLBACK_PATH;
-      }
-
-      btn.addEventListener('click', goBackSafe);
-
-      // Optional keyboard shortcut: Shift+B
-      window.addEventListener('keydown', (e) => {
-        if ((e.key === 'B' || e.key === 'b') && e.shiftKey) {
-          goBackSafe();
-        }
-      });
-    })();
-
     const albums = [
       "Taylor Swift (Debut)", "Fearless", "Speak Now", "Red",
       "1989", "Reputation", "Lover", "Folklore",
-      "Evermore", "Midnights", "The Tortured Poets Department"
+      "Evermore", "Midnights", "The Tortured Poets Department",
+      "The Life of a Showgirl"
     ];
 
-    // album → emoji
     const albumEmojis = {
       "Taylor Swift (Debut)": "🌾",
       "Fearless": "✨",
       "Speak Now": "💜",
       "Red": "❤️",
-      "1989": "🌆",
+      "1989": "🩵",
       "Reputation": "🐍",
       "Lover": "💖",
       "Folklore": "🌲",
       "Evermore": "🍂",
       "Midnights": "🌙",
-      "The Tortured Poets Department": "🖋️"
+      "The Tortured Poets Department": "🖋️",
+      "The Life of a Showgirl": "❤️‍🔥"
     };
+
+    function mapAlbumKey(album){
+      if (album === "Debut") return "Taylor Swift (Debut)";
+      if (album === "TTPD") return "The Tortured Poets Department";
+      if (album === "Showgirl") return "The Life of a Showgirl";
+      return album;
+    }
 
     const questions = [
       {
         question: "What’s your current vibe in life?",
         answers: [
           { text: "Calmly rebuilding myself", scores: {"1989":2, "Debut":1} },
-          { text: "Romantic and hopeful", scores: {"Lover":2, "Fearless":1} },
+          { text: "Romantic and hopeful", scores: {"Lover":2, "Fearless":1, "Showgirl":1} },
           { text: "Quiet reflection", scores: {"Red":2, "Folklore":1} },
-          { text: "Energetic and ambitious", scores: {"Speak Now":2, "Midnights":1} },
-          { text: "Melancholy but inspired", scores: {"The Tortured Poets Department":2, "Evermore":1} }
+          { text: "Energetic and ambitious", scores: {"Speak Now":2, "Midnights":1, "Showgirl":1} },
+          { text: "Melancholy but inspired", scores: {"TTPD":2, "Evermore":1} }
         ]
       },
       {
         question: "What’s your favorite time of day?",
         answers: [
-          { text: "Early morning calm with coffee", scores: {"Debut":2, "Fearless":1} },
-          { text: "Late night thoughts", scores: {"Red":2, "Midnights":1} },
-          { text: "Golden sunset glow", scores: {"Lover":2, "Evermore":1} },
-          { text: "3am chaotic energy", scores: {"Midnights":2, "Reputation":1} },
-          { text: "Rainy afternoon silence", scores: {"Folklore":2, "TTPD":1} }
+          { text: "Vibing early morning", scores: {"Debut":2, "Fearless":1} },
+          { text: "Late night in silence", scores: {"Red":2, "Midnights":1} },
+          { text: "Golden sunset", scores: {"Lover":2, "Evermore":1} },
+          { text: "Energetic night", scores: {"Showgirl":2, "Reputation":1} },
+          { text: "Rainy afternoon", scores: {"Folklore":2, "TTPD":1} }
         ]
       },
       {
         question: "What’s your ideal weekend activity?",
         answers: [
           { text: "Writing or journaling", scores: {"Fearless":2, "Folklore":1} },
-          { text: "Dancing with friends", scores: {"1989":2, "Speak Now":1} },
+          { text: "Dancing with friends", scores: {"1989":2, "Speak Now":1, "Showgirl":1} },
           { text: "Baking or cozy indoors", scores: {"Evermore":2, "Lover":1} },
-          { text: "Road trip adventure", scores: {"Red":2, "Debut":1} },
+          { text: "Red carpet + movie night", scores: {"Showgirl":2, "1989":1} },
           { text: "Reflecting alone", scores: {"TTPD":2, "Midnights":1} }
         ]
       },
@@ -211,7 +173,7 @@
           { text: "Sadness then writing", scores: {"Evermore":2, "Red":1} },
           { text: "Silent processing", scores: {"Folklore":2, "Debut":1} },
           { text: "Cutting ties immediately", scores: {"1989":2, "Speak Now":1} },
-          { text: "Melancholic acceptance", scores: {"TTPD":2, "Lover":1} }
+          { text: "Turn pain into performance", scores: {"Showgirl":2, "TTPD":1} }
         ]
       },
       {
@@ -219,7 +181,7 @@
         answers: [
           { text: "Star-crossed and tragic", scores: {"Folklore":2, "Evermore":1} },
           { text: "Friends-to-lovers", scores: {"Fearless":2, "Lover":1} },
-          { text: "Whirlwind romance", scores: {"1989":2, "Speak Now":1} },
+          { text: "Whirlwind romance", scores: {"1989":2, "Speak Now":1, "Showgirl":1} },
           { text: "Healing and steady", scores: {"Debut":2, "Red":1} },
           { text: "Messy but poetic", scores: {"TTPD":2, "Reputation":1} }
         ]
@@ -229,7 +191,7 @@
         answers: [
           { text: "A rooftop at night", scores: {"1989":2, "Midnights":1} },
           { text: "Forest at dusk", scores: {"Folklore":2, "Evermore":1} },
-          { text: "Neon-lit city", scores: {"Reputation":2, "Speak Now":1} },
+          { text: "Neon-lit city", scores: {"Reputation":2, "Speak Now":1, "Showgirl":2} },
           { text: "Vintage diner", scores: {"Debut":2, "Fearless":1} },
           { text: "Candlelit bedroom", scores: {"Lover":2, "TTPD":1} }
         ]
@@ -241,17 +203,17 @@
           { text: "Growth", scores: {"Speak Now":2, "Fearless":1} },
           { text: "Softness", scores: {"Lover":2, "Evermore":1} },
           { text: "Truth", scores: {"Folklore":2, "Red":1} },
-          { text: "Intensity", scores: {"TTPD":2, "1989":1} }
+          { text: "Showtime", scores: {"Showgirl":2, "1989":1} }
         ]
       },
       {
         question: "What makes you feel seen?",
         answers: [
           { text: "Being listened to", scores: {"Red":2, "Folklore":1} },
-          { text: "Recognition of talent", scores: {"Fearless":2, "Speak Now":1} },
+          { text: "Recognition of talent", scores: {"Fearless":2, "Speak Now":1, "Showgirl":1} },
           { text: "Being accepted fully", scores: {"Lover":2, "Evermore":1} },
           { text: "Being trusted deeply", scores: {"Reputation":2, "Debut":1} },
-          { text: "Shared secrets & words", scores: {"TTPD":2, "Midnights":1} }
+          { text: "Sharing the spotlight", scores: {"Showgirl":2, "Midnights":1} }
         ]
       },
       {
@@ -260,7 +222,7 @@
           { text: "I’m a nightmare dressed like a daydream", scores: {"Reputation":2, "Midnights":1} },
           { text: "I remember it all too well", scores: {"Red":2, "Folklore":1} },
           { text: "Darling, you’re the best thing", scores: {"Speak Now":2, "Fearless":1} },
-          { text: "Time won’t fly, I’m paralyzed by it", scores: {"Evermore":2, "TTPD":1} },
+          { text: "Lights up, curtain call", scores: {"Showgirl":2, "1989":1} },
           { text: "It’s me, hi, I’m the problem, it’s me", scores: {"Midnights":2, "Lover":1} }
         ]
       },
@@ -268,7 +230,7 @@
         question: "Choose your outfit:",
         answers: [
           { text: "Flowy dress and boots", scores: {"Debut":2, "Fearless":1} },
-          { text: "Sparkly party dress", scores: {"1989":2, "Speak Now":1} },
+          { text: "Sparkly party dress", scores: {"1989":2, "Speak Now":1, "Showgirl":2} },
           { text: "Black leather jacket", scores: {"Reputation":2, "Midnights":1} },
           { text: "Soft pastels", scores: {"Lover":2, "Evermore":1} },
           { text: "Vintage oversized shirt", scores: {"Folklore":2, "TTPD":1} }
@@ -281,14 +243,14 @@
           { text: "Wine", scores: {"1989":2, "Lover":1} },
           { text: "Black coffee", scores: {"Reputation":2, "TTPD":1} },
           { text: "Homemade lemonade", scores: {"Debut":2, "Fearless":1} },
-          { text: "Cocktail", scores: {"Midnights":2, "Red":1} }
+          { text: "Cocktail", scores: {"Showgirl":2, "Midnights":1} }
         ]
       },
       {
         question: "Which scenery feels like home?",
         answers: [
           { text: "Golden fields", scores: {"Debut":2, "Fearless":1} },
-          { text: "City skyline", scores: {"1989":2, "Reputation":1} },
+          { text: "City skyline", scores: {"1989":2, "Reputation":1, "Showgirl":1} },
           { text: "Forest trail", scores: {"Folklore":2, "Evermore":1} },
           { text: "Bedroom window at night", scores: {"Midnights":2, "TTPD":1} },
           { text: "Sunset over the ocean", scores: {"Red":2, "Lover":1} }
@@ -299,7 +261,7 @@
         answers: [
           { text: "Writing", scores: {"TTPD":2, "Folklore":1} },
           { text: "Singing", scores: {"Speak Now":2, "Fearless":1} },
-          { text: "Dancing", scores: {"1989":2, "Lover":1} },
+          { text: "Dancing", scores: {"1989":2, "Lover":1, "Showgirl":2} },
           { text: "Painting or crafting", scores: {"Evermore":2, "Debut":1} },
           { text: "Journaling", scores: {"Midnights":2, "Red":1} }
         ]
@@ -308,55 +270,97 @@
 
     let currentQ = 0;
     let scores = {};
+    const answerHistory = []; // store chosen answer index per question
+    const quizEl = document.getElementById("quiz");
+    const resultEl = document.getElementById("result");
+    const backBtn = document.getElementById("backBtn");
+    const progressEl = document.getElementById("progress");
+
     albums.forEach(a => scores[a] = 0);
 
-    function showQuestion() {
-      if (currentQ >= questions.length) { showResult(); return; }
+    function updateProgress(){
+      progressEl.textContent = `Question ${Math.min(currentQ+1, questions.length)} of ${questions.length}`;
+      // Disable BACK on first question
+      if (currentQ === 0) backBtn.setAttribute("disabled", "true");
+      else backBtn.removeAttribute("disabled");
+    }
+
+    function renderQuestion() {
       const q = questions[currentQ];
-      const container = document.getElementById("quiz");
-      container.innerHTML = `
+      quizEl.innerHTML = `
         <div class="question">
           <h3>${q.question}</h3>
           <div class="answers">
             ${q.answers.map((a,i) => `<button onclick="answer(${i})">${a.text}</button>`).join("")}
           </div>
         </div>`;
+      resultEl.style.display = "none";
+      updateProgress();
     }
 
-    function mapAlbumKey(album){
-      if (album === "Debut") return "Taylor Swift (Debut)";
-      if (album === "TTPD") return "The Tortured Poets Department";
-      return album;
+    function applyScores(ansObj, sign){
+      for (const [album, pts] of Object.entries(ansObj.scores)) {
+        const key = mapAlbumKey(album);
+        if (!scores.hasOwnProperty(key)) scores[key] = 0;
+        scores[key] += sign * pts;
+      }
     }
 
     function answer(i) {
       const q = questions[currentQ];
       const ans = q.answers[i];
-      for (const [album, pts] of Object.entries(ans.scores)) {
-        const key = mapAlbumKey(album);
-        // initialize just in case a key appears that wasn't pre-seeded
-        if (!scores.hasOwnProperty(key)) scores[key] = 0;
-        scores[key] += pts;
-      }
+      // apply scores positively
+      applyScores(ans, +1);
+      // record history
+      answerHistory[currentQ] = i;
       currentQ++;
-      showQuestion();
+      if (currentQ >= questions.length) { showResult(); }
+      else { renderQuestion(); }
     }
 
+    function goBackOneStep(){
+      // If on first question, do nothing
+      if (currentQ === 0) return;
+      // If we're at result screen, step back to last question
+      if (currentQ >= questions.length) {
+        currentQ = questions.length - 1;
+      } else {
+        // stepping back from an in-progress question means we previously answered currentQ-1
+        currentQ = currentQ - 1;
+      }
+      // Undo the scores of the answer we had selected for that question (if any)
+      const prevIndex = answerHistory[currentQ];
+      if (typeof prevIndex === "number") {
+        const prevAns = questions[currentQ].answers[prevIndex];
+        applyScores(prevAns, -1);
+        // Optional: clear the stored answer so back-back doesn't keep subtracting
+        // but we prefer to keep it so the user can go forward again without losing state.
+      }
+      renderQuestion();
+    }
+
+    // Attach BACK behavior (only within quiz)
+    backBtn.addEventListener("click", goBackOneStep);
+    // Optional keyboard shortcut: Shift+B
+    window.addEventListener("keydown", (e) => {
+      if ((e.key === "B" || e.key === "b") && e.shiftKey) goBackOneStep();
+    });
+
     function showResult() {
-      const container = document.getElementById("quiz");
-      container.innerHTML = "";
+      quizEl.innerHTML = "";
       const topAlbum = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
       const emoji = albumEmojis[topAlbum] || "🎶";
-      const res = document.getElementById("result");
-      res.style.display = "block";
-      res.innerHTML = `
+      resultEl.style.display = "block";
+      resultEl.innerHTML = `
         <h2>Your Taylor Swift Era is:</h2>
         <h1>${topAlbum}</h1>
         <div style="font-size:3em; margin-top:10px;">${emoji}</div>
       `;
+      updateProgress();
     }
 
-    showQuestion();
+    // Initial render
+    renderQuestion();
   </script>
 </body>
 </html>
