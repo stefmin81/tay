@@ -5,15 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Which Era Are You?</title>
   <style>
+    :root {
+      --bg1: #f8d7f8;
+      --bg2: #d7f8f3;
+      --card: #ffffff;
+      --shadow-sm: 0 2px 6px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.2);
+      --radius: 12px;
+      --radius-btn: 10px;
+    }
+    * { box-sizing: border-box; }
     body {
       font-family: Arial, sans-serif;
-      background: linear-gradient(to right, #f8d7f8, #d7f8f3);
+      background: linear-gradient(to right, var(--bg1), var(--bg2));
       margin: 0;
-      padding: 0;
+      padding: 0 16px 40px;
       text-align: center;
+      min-height: 100vh;
     }
-    h1 { margin: 20px; font-size: 2em; }
-    #quiz { max-width: 600px; margin: auto; padding: 10px; }
+    /* Back button */
+    .back-wrap {
+      position: sticky;
+      top: 0;
+      display: flex;
+      justify-content: flex-start;
+      padding: 12px 0 0;
+      z-index: 5;
+      text-align: left;
+    }
+    #backBtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 999px;
+      padding: 10px 14px;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      font-size: 14px;
+      transition: transform 0.05s ease, background 0.3s ease;
+    }
+    #backBtn:hover { background: #f0e0f7; }
+    #backBtn:active { transform: translateY(1px); }
+    #backBtn svg { width: 18px; height: 18px; }
+    h1 { margin: 10px 0 18px; font-size: 2em; }
+    #quiz { max-width: 640px; margin: 0 auto; padding: 10px; }
     .question h3 { font-size: 1.3em; margin-bottom: 15px; }
     .answers button {
       display: block;
@@ -21,29 +58,75 @@
       margin: 8px 0;
       padding: 12px;
       border: none;
-      border-radius: 10px;
-      background: #fff;
+      border-radius: var(--radius-btn);
+      background: var(--card);
       font-size: 1em;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: var(--shadow-sm);
       transition: background 0.3s;
     }
     .answers button:hover { background: #f0e0f7; cursor: pointer; }
     #result {
       display: none;
-      margin-top: 30px;
+      margin: 24px auto 0;
       padding: 20px;
-      border-radius: 12px;
-      background: #fff;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow-md);
+      max-width: 640px;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,1px,1px);
+      white-space: nowrap;
+      border: 0;
     }
   </style>
 </head>
 <body>
+  <div class="back-wrap">
+    <button id="backBtn" aria-label="Go back to the previous page">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M10.828 11.293 15.121 7l1.415 1.414-3.293 3.293 3.293 3.293-1.415 1.414-4.293-4.293a1 1 0 0 1 0-1.414Z"/>
+      </svg>
+      Back
+    </button>
+  </div>
+
   <h1>Which Era Are You?</h1>
-  <div id="quiz"></div>
-  <div id="result"></div>
+  <div id="quiz" role="region" aria-live="polite"></div>
+  <div id="result" role="region" aria-live="polite"></div>
 
   <script>
+    // Handle Back behavior
+    (function(){
+      const btn = document.getElementById('backBtn');
+      function goBack(){
+        if (window.history && window.history.length > 1) {
+          window.history.back();
+        } else {
+          // No history: fall back to previous path or root
+          const ref = document.referrer;
+          if (ref) {
+            window.location.href = ref;
+          } else {
+            window.location.href = '/';
+          }
+        }
+      }
+      btn.addEventListener('click', goBack);
+      // Keyboard shortcut: Alt + Left Arrow also works natively; add Shift+B
+      window.addEventListener('keydown', (e) => {
+        if ((e.key === 'B' || e.key === 'b') && e.shiftKey) {
+          goBack();
+        }
+      });
+    })();
+
     const albums = [
       "Taylor Swift (Debut)", "Fearless", "Speak Now", "Red",
       "1989", "Reputation", "Lover", "Folklore",
@@ -151,7 +234,7 @@
         answers: [
           { text: "I’m a nightmare dressed like a daydream", scores: {"Reputation":2, "Midnights":1} },
           { text: "I remember it all too well", scores: {"Red":2, "Folklore":1} },
-          { text: "Darling you’re the best thing", scores: {"Speak Now":2, "Fearless":1} },
+          { text: "Darling, you’re the best thing", scores: {"Speak Now":2, "Fearless":1} },
           { text: "Time won’t fly, I’m paralyzed by it", scores: {"Evermore":2, "TTPD":1} },
           { text: "It’s me, hi, I’m the problem, it’s me", scores: {"Midnights":2, "Lover":1} }
         ]
@@ -215,12 +298,19 @@
         </div>`;
     }
 
+    function mapAlbumKey(album){
+      if (album === "Debut") return "Taylor Swift (Debut)";
+      if (album === "TTPD") return "The Tortured Poets Department";
+      return album;
+    }
+
     function answer(i) {
       const q = questions[currentQ];
       const ans = q.answers[i];
       for (const [album, pts] of Object.entries(ans.scores)) {
-        // "Debut" fix mapping to full album name
-        let key = album === "Debut" ? "Taylor Swift (Debut)" : album;
+        const key = mapAlbumKey(album);
+        // initialize just in case a key appears that wasn't pre-seeded
+        if (!scores.hasOwnProperty(key)) scores[key] = 0;
         scores[key] += pts;
       }
       currentQ++;
@@ -232,8 +322,9 @@
       container.innerHTML = "";
       const topAlbum = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
       const emoji = albumEmojis[topAlbum] || "🎶";
-      document.getElementById("result").style.display = "block";
-      document.getElementById("result").innerHTML = `
+      const res = document.getElementById("result");
+      res.style.display = "block";
+      res.innerHTML = `
         <h2>Your Taylor Swift Era is:</h2>
         <h1>${topAlbum}</h1>
         <div style="font-size:3em; margin-top:10px;">${emoji}</div>
