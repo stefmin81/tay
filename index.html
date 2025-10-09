@@ -318,14 +318,12 @@
       }
     }
 
-    function answer(ev, i) {
+    function answer(el, i) {
       const q = questions[currentQ];
       const ans = q.answers[i];
       // blur tapped element to avoid sticky focus on mobile
       try {
-        if (ev && ev.currentTarget && typeof ev.currentTarget.blur === "function") {
-          ev.currentTarget.blur();
-        }
+        if (el && typeof el.blur === "function") { el.blur(); }
       } catch(_) {}
       try {
         if (document.activeElement && typeof document.activeElement.blur === "function") {
