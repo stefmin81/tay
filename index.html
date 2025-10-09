@@ -74,13 +74,6 @@
       transition: background 0.3s;
     }
     .answers button:hover { background: #f0e0f7; cursor: pointer; }
-    .answers button {
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-    }
-    .answers button:focus { outline: none; }
-    .answers button:focus-visible { outline: 2px solid rgba(100,120,255,0.6); }
-
     #result {
       display: none;
       margin: 24px auto 0;
@@ -302,11 +295,6 @@
           </div>
         </div>`;
       resultEl.style.display = "none";
-      // move focus to the question header to prevent same-spot buttons appearing "selected"
-      setTimeout(() => {
-        const h = quizEl.querySelector(".question h3");
-        if (h) { h.setAttribute("tabindex","-1"); try { h.focus({preventScroll:true}); } catch(_) {} }
-      }, 0);
       updateProgress();
     }
 
@@ -318,18 +306,9 @@
       }
     }
 
-    function answer(el, i) {
+    function answer(i) {
       const q = questions[currentQ];
       const ans = q.answers[i];
-      // blur tapped element to avoid sticky focus on mobile
-      try {
-        if (el && typeof el.blur === "function") { el.blur(); }
-      } catch(_) {}
-      try {
-        if (document.activeElement && typeof document.activeElement.blur === "function") {
-          document.activeElement.blur();
-        }
-      } catch(_) {}
       // apply scores positively
       applyScores(ans, +1);
       // record history
@@ -369,7 +348,6 @@
 
     function showResult() {
       quizEl.innerHTML = "";
-      try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch(_) {}
       const topAlbum = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
       const emoji = albumEmojis[topAlbum] || "🎶";
       resultEl.style.display = "block";
