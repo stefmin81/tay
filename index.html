@@ -74,6 +74,39 @@
       box-shadow: var(--shadow-sm);
       transition: background 0.3s;
     }
+
+.answers button {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInSlide 0.3s ease forwards;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes fadeInSlide {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+.answers button {
+  transition: transform 0.1s ease, background 0.3s ease;
+}
+
+.answers button:active {
+  transform: scale(0.97);
+  background-color: #e6d4ee;
+}
+
+.answers button:focus {
+  outline: none;
+  background: #fff;
+
+  box-shadow: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
     .answers button:hover { background: #f0e0f7; cursor: pointer; }
     #result {
       opacity: 0;
@@ -300,7 +333,7 @@
         <div class="question">
           <h3>${q.question}</h3>
           <div class="answers">
-            ${q.answers.map((a,i) => `<button onclick="answer(${i})">${a.text}</button>`).join("")}
+            ${q.answers.map((a,i) => `<button style="--delay: ${i * 0.1}s" onclick="answer(${i})">${a.text}</button>`).join("")}
           </div>
         </div>`;
       resultEl.style.display = "none";
@@ -323,7 +356,14 @@
       // record history
       answerHistory[currentQ] = i;
       currentQ++;
-      if (currentQ >= questions.length) { showResult(); }
+      
+  const btns = document.querySelectorAll(".answers button");
+  btns.forEach(btn => {
+    btn.blur();
+    btn.setAttribute("aria-disabled", "true");
+    setTimeout(() => btn.removeAttribute("aria-disabled"), 10);
+  });
+if (currentQ >= questions.length) { showResult(); }
       else { renderQuestion(); }
     }
 
