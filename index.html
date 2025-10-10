@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Which Era Are You?</title>
   <style>
     :root {
@@ -62,6 +62,7 @@
     #quiz { max-width: 640px; margin: 0 auto; padding: 10px; }
     .question h3 { font-size: 1.3em; margin-bottom: 15px; }
     .answers button {
+  touch-action: manipulation;
       display: block;
       width: 100%;
       margin: 8px 0;
@@ -75,6 +76,8 @@
     }
     .answers button:hover { background: #f0e0f7; cursor: pointer; }
     #result {
+      opacity: 0;
+      transform: scale(0.95);
       display: none;
       margin: 24px auto 0;
       padding: 20px;
@@ -88,20 +91,24 @@
       margin-left: 8px;
       opacity: 0.8;
     }
+  
+@keyframes fadeInPop {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+#result.reveal {
+  animation: fadeInPop 0.6s ease-out forwards;
+}
+
   </style>
 </head>
 <body>
   <div class="topbar">
-    <button id="backBtn" aria-label="Go back to the previous question">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M10.828 11.293 15.121 7l1.415 1.414-3.293 3.293 3.293 3.293-1.415 1.414-4.293-4.293a1 1 0 0 1 0-1.414Z"/>
-      </svg>
-      Back
-    </button>
+    <button id="backBtn" aria-label="Go back to the previous question">&lt; Back</button>
     <div class="progress" id="progress" aria-live="polite"></div>
   </div>
 
-  <h1>Which Era Are You?</h1>
+  <h1><span style="color: hsl(0, 70%, 50%)">W</span><span style="color: hsl(30, 70%, 50%)">h</span><span style="color: hsl(60, 70%, 50%)">i</span><span style="color: hsl(90, 70%, 50%)">c</span><span style="color: hsl(120, 70%, 50%)">h</span><span style="color: hsl(150, 70%, 50%)"> </span><span style="color: hsl(180, 70%, 50%)">E</span><span style="color: hsl(210, 70%, 50%)">r</span><span style="color: hsl(240, 70%, 50%)">a</span><span style="color: hsl(270, 70%, 50%)"> </span><span style="color: hsl(300, 70%, 50%)">A</span><span style="color: hsl(330, 70%, 50%)">r</span><span style="color: hsl(360, 70%, 50%)">e</span><span style="color: hsl(390, 70%, 50%)"> </span><span style="color: hsl(420, 70%, 50%)">Y</span><span style="color: hsl(450, 70%, 50%)">o</span><span style="color: hsl(480, 70%, 50%)">u</span><span style="color: hsl(510, 70%, 50%)">?</span></h1>
   <div id="quiz" role="region" aria-live="polite"></div>
   <div id="result" role="region" aria-live="polite"></div>
 
@@ -355,11 +362,40 @@
         <h2>Your Taylor Swift Era is:</h2>
         <h1>${topAlbum}</h1>
         <div style="font-size:3em; margin-top:10px;">${emoji}</div>
-      `;
+      <br><button class="btn" onclick="restartQuiz()" style="margin-top:20px; font-size: 1.2em; padding: 16px 28px;">New test</button>`;
       updateProgress();
     }
 
-    // Initial render
+    
+function showResult() {
+  quizEl.innerHTML = "";
+  const topAlbum = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
+  const emoji = albumEmojis[topAlbum] || "🎶";
+  resultEl.innerHTML = `
+    <h2>Your Taylor Swift Era is:</h2>
+    <h1>${topAlbum}</h1>
+    <div style="font-size:3em; margin-top:10px;">${emoji}</div>
+  <br><button class="btn" onclick="restartQuiz()" style="margin-top:20px; font-size: 1.2em; padding: 16px 28px;">New test</button>`;
+  resultEl.style.display = "block";
+  resultEl.classList.remove("reveal");
+  setTimeout(() => resultEl.classList.add("reveal"), 50);
+  updateProgress();
+}
+
+
+
+function restartQuiz() {
+  currentQ = 0;
+  scores = {};
+  albums.forEach(a => scores[a] = 0);
+  answerHistory.length = 0;
+  resultEl.style.display = "none";
+  resultEl.classList.remove("reveal");
+  renderQuestion();
+}
+
+
+// Initial render
     renderQuestion();
   </script>
 </body>
