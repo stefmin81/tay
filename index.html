@@ -112,6 +112,8 @@
   <div id="quiz" role="region" aria-live="polite"></div>
   <div id="result" role="region" aria-live="polite"></div>
 
+
+
   <script>
     const albums = [
       "Taylor Swift (Debut)", "Fearless", "Speak Now", "Red",
@@ -362,7 +364,10 @@
         <h2>Your Taylor Swift Era is:</h2>
         <h1>${topAlbum}</h1>
         <div style="font-size:3em; margin-top:10px;">${emoji}</div>
-      <br><button class="btn" onclick="restartQuiz()" style="margin-top:20px; font-size: 1.2em; padding: 16px 28px;">New test</button>`;
+      <br>
+<div style="text-align: center; margin-top: 24px;">
+  <button class="btn" onclick="restartQuiz()" style="font-size: 1em; padding: 12px 24px; border-radius: 16px; background: linear-gradient(135deg, #f093fb, #f5576c); color: white; font-weight: bold; border: none;">New test</button>
+</div>`;
       updateProgress();
     }
 
@@ -375,7 +380,10 @@ function showResult() {
     <h2>Your Taylor Swift Era is:</h2>
     <h1>${topAlbum}</h1>
     <div style="font-size:3em; margin-top:10px;">${emoji}</div>
-  <br><button class="btn" onclick="restartQuiz()" style="margin-top:20px; font-size: 1.2em; padding: 16px 28px;">New test</button>`;
+  <br>
+<div style="text-align: center; margin-top: 24px;">
+  <button class="btn" onclick="restartQuiz()" style="font-size: 1em; padding: 12px 24px; border-radius: 16px; background: linear-gradient(135deg, #f093fb, #f5576c); color: white; font-weight: bold; border: none;">New test</button>
+</div>`;
   resultEl.style.display = "block";
   resultEl.classList.remove("reveal");
   setTimeout(() => resultEl.classList.add("reveal"), 50);
